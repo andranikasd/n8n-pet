@@ -1,0 +1,48 @@
+version: '3'
+services:
+  app:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_USER=n8n
+      - DB_POSTGRESDB_PASSWORD=secret
+      # Enforce proper file permissions for settings
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      # Enable task runners to avoid deprecation warnings
+      - N8N_RUNNERS_ENABLED=true
+      # Trust reverse proxy headers (fixes X-Forwarded-For error)
+      - N8N_TRUST_PROXY=true
+      # Set your custom encryption key (ensure this is consistent)
+      - N8N_ENCRYPTION_KEY=yourCustomEncryptionKey123
+    depends_on:
+      - postgres
+    restart: always
+
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_DB=n8n
+      - POSTGRES_USER=n8n
+      - POSTGRES_PASSWORD=secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+
+  loadbalancer:
+    image: nginx:stable
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    restart: always
+
+volumes:
+  pgdata:
